@@ -80,9 +80,19 @@ def patch(document_id: str, body: DocumentPatch, db: Session = Depends(get_db),
         d.subject_id = None
         d.subject_suggested = False
     elif body.subject_id is not None:
+        from app.models import Subject
+
+        subj = db.get(Subject, body.subject_id)
+        if subj is None or subj.user_id not in (None, user.id):
+            raise NotFoundError("Subject not found.")
         d.subject_id = body.subject_id
         d.subject_suggested = False
     if body.topic_id is not None:
+        from app.models import Topic
+
+        topic = db.get(Topic, body.topic_id)
+        if topic is None or topic.user_id != user.id:
+            raise NotFoundError("Topic not found.")
         d.topic_id = body.topic_id
     db.commit()
     return svc.serialize(d)

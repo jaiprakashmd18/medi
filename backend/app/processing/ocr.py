@@ -4,6 +4,7 @@ silently dropped."""
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 from functools import lru_cache
 
@@ -21,8 +22,11 @@ def tesseract_status() -> tuple[bool, str]:
     except ImportError:
         return False, "pytesseract is not installed"
     cmd = get_settings().tesseract_cmd
+    win_default = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
     if cmd:
         pytesseract.pytesseract.tesseract_cmd = cmd
+    elif not shutil.which("tesseract") and os.path.exists(win_default):
+        pytesseract.pytesseract.tesseract_cmd = win_default
     elif not shutil.which("tesseract"):
         return False, ("Tesseract OCR binary not found. Install it (Windows: UB Mannheim build) "
                        "and set TESSERACT_CMD if it is not on PATH.")

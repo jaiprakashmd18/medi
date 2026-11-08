@@ -39,3 +39,14 @@ def test_secret_redaction():
 
     assert "sk-ant-abc" not in redact("key=sk-ant-abcdef1234567890 x")
     assert "***REDACTED***" in redact('{"x-api-key": "supersecret"}')
+
+
+def test_access_token_redacted_in_logs():
+    from app.core.logging import redact
+
+    assert "abc.def" not in redact('GET /api/documents/x/file?access_token=abc.def HTTP/1.1')
+
+
+def test_cannot_attach_foreign_subject(client, heart_doc):
+    r = client.patch(f"/api/documents/{heart_doc['id']}", json={"subject_id": 99999})
+    assert r.status_code == 404

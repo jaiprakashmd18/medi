@@ -78,6 +78,14 @@ def list_topics(subject_id: int | None = None, db: Session = Depends(get_db), us
 
 @router.post("/topics", response_model=TopicOut, status_code=201, tags=["subjects"])
 def create_topic(body: TopicIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if body.subject_id is not None:
+        subj = db.get(Subject, body.subject_id)
+        if subj is None or subj.user_id not in (None, user.id):
+            raise NotFoundError("Subject not found.")
+    if body.parent_id is not None:
+        parent = db.get(Topic, body.parent_id)
+        if parent is None or parent.user_id != user.id:
+            raise NotFoundError("Parent topic not found.")
     t = Topic(user_id=user.id, subject_id=body.subject_id, parent_id=body.parent_id, name=body.name.strip())
     db.add(t)
     try:

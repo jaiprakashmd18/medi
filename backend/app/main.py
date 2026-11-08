@@ -39,6 +39,11 @@ async def lifespan(_: FastAPI):
     n = resume_interrupted()
     if n:
         log.info("Re-queued %d interrupted document(s)", n)
+    s = get_settings()
+    if s.auth_mode == "multi_user" and s.secret_key == "change-me-in-production":
+        if s.app_env == "production":
+            raise RuntimeError("SECRET_KEY must be set to a long random value in production multi-user mode.")
+        log.warning("SECRET_KEY is the default value; set a random SECRET_KEY before sharing this server.")
     log.info("MEDI-GENIUS backend ready (data dir: %s)", get_settings().data_dir)
     yield
 

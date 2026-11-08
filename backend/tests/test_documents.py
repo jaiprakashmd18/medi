@@ -147,3 +147,20 @@ def test_corrupted_pdf_fails_with_message(client):
     st = wait_ready(client, r.json()["documents"][0]["id"])
     assert st["status"] == "failed"
     assert st["error_message"]
+
+
+@pytest.mark.skipif(not ocr_available(), reason="Tesseract not installed")
+def test_image_gallery_and_label_quiz(client, heart_doc):
+    imgs = client.get("/api/images", params={"document_id": heart_doc["id"]}).json()
+    assert imgs and imgs[0]["document_title"] and imgs[0]["origin"] == "original"
+    diagram = next(i for i in imgs if i["page_number"] == 1)
+    lab = client.get(f"/api/images/{diagram['id']}/labels").json()
+    texts = " ".join(label["text"] for label in lab["labels"])
+    assert "Aorta" in texts
+    assert all(label["width"] > 0 for label in lab["labels"])
+
+
+def test_access_token_query_param(client, heart_doc):
+    # single-user mode ignores missing token; an access_token param must not break requests
+    r = client.get(f"/api/documents/{heart_doc['id']}/file", params={"access_token": "x.y"})
+    assert r.status_code == 200

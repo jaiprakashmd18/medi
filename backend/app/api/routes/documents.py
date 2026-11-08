@@ -183,3 +183,67 @@ def search(q: str = Query(min_length=2, max_length=500), document_ids: list[str]
             "results": [{"chunk_id": c.chunk_id, "document_id": c.document_id, "document_title": c.document_title,
                          "page_number": c.page_number, "page_kind": c.page_kind, "section": c.section, "kind": c.kind,
                          "text": c.text, "score": c.score} for c in res.chunks]}
+
+
+images_router = APIRouter(prefix="/images", tags=["visual"])
+
+
+@images_router.get("")
+def all_images(document_id: str | None = None, subject_id: int | None = None, db: Session = Depends(get_db),
+               user: User = Depends(get_current_user)):
+    from app.models import Document
+    from app.rag.retriever import page_kind_for
+
+    q = (select(DocumentImage, Document.title, Document.file_type).join(Document, Document.id == DocumentImage.document_id)
+         .where(Document.user_id == user.id))
+    if document_id:
+        q = q.where(Document.id == document_id)
+    if subject_id is not None:
+        q = q.where(Document.subject_id == subject_id)
+    out = []
+    for img, title, ftype in db.execute(q.order_by(Document.created_at.desc(), DocumentImage.page_number,
+                                                   DocumentImage.index_on_page)):
+        o = _image_out(img).model_dump()
+        o.update(document_id=img.document_id, document_title=title, page_kind=page_kind_for(ftype))
+        out.append(o)
+    return out
+
+
+@images_router.get("/{image_id}/labels")
+def image_labels(image_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Locate text labels on an ORIGINAL diagram with OCR so they can be masked for a label quiz.
+    Only labels actually detected in the image are returned - nothing is invented."""
+    import io
+
+    from PIL import Image
+
+    from app.processing.ocr import ocr_available
+
+    img = db.get(DocumentImage, image_id)
+    if img is None:
+        raise NotFoundError("Image not found.")
+    svc.get_owned(db, user, img.document_id)
+    if not ocr_available():
+        return {"width": img.width, "height": img.height, "labels": [], "ocr_available": False,
+                "note": "Tesseract OCR is not installed, so labels cannot be located."}
+    import pytesseract
+
+    with Image.open(io.BytesIO(get_storage().read_bytes(img.path))) as im:
+        data = pytesseract.image_to_data(im.convert("RGB"), output_type=pytesseract.Output.DICT)
+    # group words into lines (block, paragraph, line)
+    groups: dict[tuple, list[int]] = {}
+    for i, word in enumerate(data["text"]):
+        if word.strip() and float(data["conf"][i]) >= 50 and any(ch.isalpha() for ch in word):
+            groups.setdefault((data["block_num"][i], data["par_num"][i], data["line_num"][i]), []).append(i)
+    labels = []
+    for idxs in groups.values():
+        left = min(data["left"][i] for i in idxs)
+        top = min(data["top"][i] for i in idxs)
+        right = max(data["left"][i] + data["width"][i] for i in idxs)
+        bottom = max(data["top"][i] + data["height"][i] for i in idxs)
+        text = " ".join(data["text"][i] for i in idxs).strip()
+        if len(text) >= 3:
+            labels.append({"text": text, "left": left, "top": top, "width": right - left, "height": bottom - top,
+                           "conf": round(sum(float(data["conf"][i]) for i in idxs) / len(idxs), 1)})
+    return {"width": img.width, "height": img.height, "labels": labels[:40], "ocr_available": True,
+            "note": "Labels located by OCR on the original image. Verify against the source if anything looks wrong."}

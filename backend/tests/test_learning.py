@@ -131,3 +131,15 @@ def test_dashboard_and_export(client, heart_doc):
 
     data = json.loads(zipfile.ZipFile(io.BytesIO(r.content)).read("medi-genius-export.json"))
     assert data["documents"] and "password_hash" not in json.dumps(data["user"])
+
+
+def test_explanation_citations_renumbered(client, heart_doc, fake_cloud, consent):
+    fake_cloud.quiz_override = {"questions": [
+        {"type": "sba", "prompt": "Which valve lies between the left atrium and ventricle?",
+         "options": ["Tricuspid", "Mitral", "Pulmonary", "Aortic"], "correct_options": [1], "true_false_answer": "n/a",
+         "accepted_answers": [], "model_answer": "", "key_points": [], "explanation": "See [2] and [7].",
+         "topic": "Valves", "source_ids": [2], "image_ref": ""}]}
+    quiz = client.post("/api/quizzes/generate", json={"document_ids": [heart_doc["id"]], "num_questions": 1}).json()
+    res = client.post(f"/api/quizzes/{quiz['id']}/submit", json={"answers": {"0": 1}}).json()
+    assert res["results"][0]["explanation"] == "See [1] and ."
+    assert len(res["results"][0]["citations"]) == 1

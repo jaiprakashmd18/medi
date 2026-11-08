@@ -251,6 +251,11 @@ def generate_quiz(db: Session, user: User, *, document_ids: list[str], subject_i
     db.add(quiz)
     db.flush()
     for i, v in enumerate(valid):
+        # Renumber [n] references in the explanation from evidence numbering to this
+        # question's own citation list (1..k); references to unsupported sources are removed.
+        pos = {sid: k + 1 for k, sid in enumerate(v["source_ids"])}
+        v["explanation"] = re.sub(r"\[(\d{1,2})\]", lambda m: f"[{pos[int(m.group(1))]}]" if int(m.group(1)) in pos else "",
+                                  v["explanation"])
         cites = []
         for sid in v["source_ids"]:
             c = evidence[sid - 1]

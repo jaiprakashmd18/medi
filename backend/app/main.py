@@ -76,7 +76,8 @@ def create_app() -> FastAPI:
 
     from app.api.routes import auth, documents, learning, settings as settings_routes, system
 
-    for r in (system.router, auth.router, documents.router, documents.search_router, settings_routes.router,
+    for r in (system.router, auth.router, documents.router, documents.search_router, documents.images_router,
+              settings_routes.router,
               learning.router):
         app.include_router(r, prefix="/api")
     return app

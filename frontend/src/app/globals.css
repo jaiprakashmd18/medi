@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+html, body { height: 100%; }
+body {
+  @apply bg-navy-950 text-ink antialiased;
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, rgba(34, 211, 238, 0.07), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(45, 212, 191, 0.05), transparent 60%);
+  background-attachment: fixed;
+}
+
+* { scrollbar-width: thin; scrollbar-color: #1e355e transparent; }
+::selection { background: rgba(34, 211, 238, 0.3); }
+
+@layer components {
+  .card { @apply rounded-2xl border border-white/[0.06] bg-navy-900/80 shadow-card backdrop-blur-sm; }
+  .card-hover { @apply transition hover:border-accent/30 hover:shadow-glow; }
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-navy-850 px-3 py-2 text-sm text-ink placeholder:text-ink-faint
+      outline-none transition focus:border-accent/60 focus:ring-2 focus:ring-accent/20;
+  }
+  .label { @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-muted; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium; }
+  .section-title { @apply text-sm font-semibold uppercase tracking-wider text-ink-muted; }
+  .focus-ring { @apply outline-none focus-visible:ring-2 focus-visible:ring-accent/60; }
+}
+
+/* Markdown answers */
+.prose-med { @apply text-[0.94rem] leading-relaxed text-ink; }
+.prose-med h1, .prose-med h2, .prose-med h3, .prose-med h4 { @apply mb-2 mt-4 font-semibold text-white; }
+.prose-med h1 { @apply text-lg; } .prose-med h2 { @apply text-base; } .prose-med h3 { @apply text-[0.95rem] text-accent-soft; }
+.prose-med p { @apply my-2; }
+.prose-med ul { @apply my-2 list-disc space-y-1 pl-5; }
+.prose-med ol { @apply my-2 list-decimal space-y-1 pl-5; }
+.prose-med strong { @apply font-semibold text-white; }
+.prose-med code { @apply rounded bg-navy-800 px-1 py-0.5 font-mono text-[0.85em] text-accent-soft; }
+.prose-med pre { @apply my-2 overflow-x-auto rounded-lg bg-navy-850 p-3; }
+.prose-med table { @apply my-3 w-full border-collapse overflow-hidden rounded-lg text-sm; }
+.prose-med th { @apply border border-white/10 bg-navy-800 px-2 py-1.5 text-left font-semibold; }
+.prose-med td { @apply border border-white/10 px-2 py-1.5 align-top; }
+.prose-med blockquote { @apply my-2 border-l-2 border-accent/50 pl-3 text-ink-muted; }
+.prose-med a { @apply text-accent underline-offset-2 hover:underline; }
+.prose-med hr { @apply my-4 border-white/10; }

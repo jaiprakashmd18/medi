@@ -65,6 +65,30 @@ export default function SettingsPage() {
           <Toggle checked={settings.cloud_consent} onChange={(v) => update({ cloud_consent: v })} label="Cloud consent" />
         </div>
 
+        <div className="mt-3 flex items-start gap-3 rounded-xl border border-white/5 bg-navy-850/60 p-4">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-2 font-medium text-white">
+              Allow NVIDIA reranking of search results
+              {providers?.reranker && (
+                <Badge tone={providers.reranker.active_for_you ? "ok" : "default"}>
+                  {providers.reranker.active_for_you ? "Active" : !providers.reranker.configured ? "Not configured"
+                    : settings.ai_mode === "local_only" ? "Off in local-only mode" : "Off"}
+                </Badge>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-ink-muted">
+              When enabled, the text of the candidate passages retrieved for each question (and the question itself) is sent to
+              NVIDIA&apos;s Nemotron reranking API to put the most relevant passages first. No file names, titles or IDs are sent.
+              This is separate from Claude consent, never used in local-only mode, and you can switch it off at any time; local
+              ranking is used whenever it is off or unavailable.
+              {settings.nvidia_consent_at && ` Consent given ${new Date(settings.nvidia_consent_at).toLocaleString()}.`}
+              {providers?.reranker && !providers.reranker.configured && " The server administrator must set NVIDIA_API_KEY in the backend .env."}
+            </p>
+          </div>
+          <Toggle checked={settings.nvidia_consent} onChange={(v) => update({ nvidia_consent: v })} label="NVIDIA rerank consent" />
+        </div>
+
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {providers?.providers.map((p) => (
             <div key={p.name} className="rounded-xl border border-white/5 bg-navy-850/60 p-4">

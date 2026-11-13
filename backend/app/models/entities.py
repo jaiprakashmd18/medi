@@ -49,6 +49,9 @@ class UserSettings(TimestampMixin, Base):
     default_teaching_level: Mapped[int] = mapped_column(Integer, default=2)
     cloud_consent: Mapped[bool] = mapped_column(Boolean, default=False)
     cloud_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Separate, revocable consent for sending retrieved passages to NVIDIA for reranking
+    nvidia_consent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    nvidia_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     voice_rate: Mapped[float] = mapped_column(Float, default=1.0)
     voice_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     daily_review_goal: Mapped[int] = mapped_column(Integer, default=20)

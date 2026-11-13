@@ -25,6 +25,7 @@ study.
 | AI tutor: 5 teaching levels, 9 quick actions, streaming, follow-ups, persisted history | ✅ |
 | Verifiable citations (document + page/slide + section); fabricated reference numbers are detected and flagged | ✅ |
 | Claude (Anthropic API) and Ollama (local) providers, auto / local-only / cloud-only routing, health checks | ✅ |
+| Optional NVIDIA Nemotron 3.5 reranking of retrieved passages (separate consent, local fallback) | ✅ — [setup](docs/NVIDIA_RERANKER.md) |
 | Explicit consent before any document excerpt goes to the cloud | ✅ |
 | Prompt-injection hygiene for document content | ✅ |
 | Visual learning: diagram gallery, enlarge, AI diagram explanation (vision), OCR label quiz | ✅ |
@@ -58,6 +59,12 @@ Or start the two servers yourself in two terminals:
 
 macOS / Linux: `python3 -m venv backend/.venv && backend/.venv/bin/pip install -r backend/requirements-dev.txt`,
 `cd frontend && npm install`, then `./scripts/dev.sh`.
+
+### Optional: better search ranking with NVIDIA
+
+Set `NVIDIA_API_KEY` in `.env`, restart the backend, and switch on **Settings → Allow NVIDIA reranking**. Only the
+question and the retrieved passage texts are sent, never in local-only mode. See
+[docs/NVIDIA_RERANKER.md](docs/NVIDIA_RERANKER.md).
 
 ### Turn on the AI
 

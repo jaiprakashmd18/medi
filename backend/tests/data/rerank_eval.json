@@ -1,0 +1,179 @@
+{
+  "description": "Fixed evaluation set for comparing local hybrid ranking with NVIDIA reranking. Passages are short original study notes written for this test; each question lists the passage id(s) that answer it. Several passages are deliberate distractors that share vocabulary with the questions. Questions 11-18 are paraphrases and clinical vignettes with little word overlap.",
+  "passages": [
+    {
+      "id": "mitral",
+      "text": "The mitral valve, also called the bicuspid valve, has two cusps and lies between the left atrium and the left ventricle. It prevents backflow of blood into the left atrium during ventricular systole."
+    },
+    {
+      "id": "tricuspid",
+      "text": "The tricuspid valve has three cusps and guards the right atrioventricular orifice between the right atrium and right ventricle. Its cusps are anchored by chordae tendineae to papillary muscles."
+    },
+    {
+      "id": "aortic",
+      "text": "The aortic valve is a semilunar valve with three cusps at the outflow of the left ventricle. The coronary arteries arise from the aortic sinuses just above it."
+    },
+    {
+      "id": "sa_node",
+      "text": "The sinoatrial node, located in the wall of the right atrium near the opening of the superior vena cava, spontaneously depolarises and acts as the natural pacemaker of the heart."
+    },
+    {
+      "id": "av_node",
+      "text": "The atrioventricular node delays the electrical impulse by about 0.1 seconds before it passes to the bundle of His, giving the ventricles time to fill with blood."
+    },
+    {
+      "id": "lv_wall",
+      "text": "The left ventricle has the thickest myocardium of all heart chambers because it must generate high pressure to pump blood around the entire systemic circulation."
+    },
+    {
+      "id": "cardiac_output",
+      "text": "Cardiac output is the volume of blood pumped by each ventricle per minute and equals stroke volume multiplied by heart rate; at rest it is about five litres per minute."
+    },
+    {
+      "id": "plexus_roots",
+      "text": "The brachial plexus is formed by the anterior (ventral) rami of spinal nerves C5 to T1 and is organised into roots, trunks, divisions, cords and branches."
+    },
+    {
+      "id": "erb",
+      "text": "Erb's palsy follows injury to the upper trunk of the brachial plexus (C5-C6), often from excessive lateral flexion of the neck at birth, producing the 'waiter's tip' position of the arm."
+    },
+    {
+      "id": "klumpke",
+      "text": "Klumpke's palsy results from injury to the lower trunk (C8-T1), for example when the arm is pulled upward, and mainly affects the intrinsic muscles of the hand, causing a claw hand."
+    },
+    {
+      "id": "median",
+      "text": "The median nerve receives fibres from C5 to T1 via the lateral and medial cords. Compression in the carpal tunnel causes numbness of the thumb, index and middle fingers."
+    },
+    {
+      "id": "pfk1",
+      "text": "Phosphofructokinase-1 catalyses the committed, rate-limiting step of glycolysis. It is allosterically activated by AMP and fructose 2,6-bisphosphate and inhibited by ATP and citrate."
+    },
+    {
+      "id": "glycolysis_yield",
+      "text": "Glycolysis occurs in the cytosol and converts one glucose molecule into two pyruvate molecules with a net gain of two ATP and two NADH."
+    },
+    {
+      "id": "gluconeo",
+      "text": "Gluconeogenesis synthesises glucose from non-carbohydrate precursors such as lactate, glycerol and alanine, mainly in the liver; fructose 1,6-bisphosphatase bypasses the phosphofructokinase step."
+    },
+    {
+      "id": "distract_valve_history",
+      "text": "Valve replacement surgery has a long history; early mechanical valves used a caged ball design, and modern patients may receive bioprosthetic valves."
+    },
+    {
+      "id": "cervical",
+      "text": "The cervical plexus is formed by the ventral rami of C1 to C4 and supplies skin of the neck; its phrenic nerve branch (C3-C5) innervates the diaphragm."
+    }
+  ],
+  "questions": [
+    {
+      "q": "Which valve sits between the left atrium and left ventricle and how many cusps does it have?",
+      "relevant": [
+        "mitral"
+      ]
+    },
+    {
+      "q": "What structure is the natural pacemaker of the heart?",
+      "relevant": [
+        "sa_node"
+      ]
+    },
+    {
+      "q": "Why is there a delay at the AV node?",
+      "relevant": [
+        "av_node"
+      ]
+    },
+    {
+      "q": "Why is the wall of the left ventricle thicker than the right?",
+      "relevant": [
+        "lv_wall"
+      ]
+    },
+    {
+      "q": "How do you calculate cardiac output?",
+      "relevant": [
+        "cardiac_output"
+      ]
+    },
+    {
+      "q": "Which spinal nerve roots form the brachial plexus?",
+      "relevant": [
+        "plexus_roots"
+      ]
+    },
+    {
+      "q": "A newborn has the arm adducted and internally rotated after a difficult delivery. Which part of the plexus is injured?",
+      "relevant": [
+        "erb"
+      ]
+    },
+    {
+      "q": "What causes claw hand after the arm is pulled upwards?",
+      "relevant": [
+        "klumpke"
+      ]
+    },
+    {
+      "q": "What is the rate-limiting enzyme of glycolysis and what inhibits it?",
+      "relevant": [
+        "pfk1"
+      ]
+    },
+    {
+      "q": "How much ATP does glycolysis produce?",
+      "relevant": [
+        "glycolysis_yield"
+      ]
+    },
+    {
+      "q": "A patient wakes at night with tingling in the thumb and first two fingers. Which nerve is likely compressed?",
+      "relevant": [
+        "median"
+      ]
+    },
+    {
+      "q": "Which nerve supplies the diaphragm and what are its roots?",
+      "relevant": [
+        "cervical"
+      ]
+    },
+    {
+      "q": "What stops the atrioventricular valve leaflets on the right side from everting into the atrium?",
+      "relevant": [
+        "tricuspid"
+      ]
+    },
+    {
+      "q": "Where do the vessels that supply the heart muscle itself originate?",
+      "relevant": [
+        "aortic"
+      ]
+    },
+    {
+      "q": "Why do the ventricles have time to fill before they contract?",
+      "relevant": [
+        "av_node"
+      ]
+    },
+    {
+      "q": "Which enzyme lets the liver get around the committed step of glycolysis when making glucose?",
+      "relevant": [
+        "gluconeo"
+      ]
+    },
+    {
+      "q": "Which injury causes weakness of the small muscles of the hand after the arm is yanked overhead?",
+      "relevant": [
+        "klumpke"
+      ]
+    },
+    {
+      "q": "Roughly how much blood does the heart pump each minute at rest?",
+      "relevant": [
+        "cardiac_output"
+      ]
+    }
+  ]
+}

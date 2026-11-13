@@ -43,6 +43,8 @@ class SettingsOut(ORM):
     default_teaching_level: int
     cloud_consent: bool
     cloud_consent_at: datetime | None
+    nvidia_consent: bool = False
+    nvidia_consent_at: datetime | None = None
     voice_rate: float
     voice_name: str | None
     daily_review_goal: int
@@ -53,6 +55,7 @@ class SettingsIn(BaseModel):
     ai_mode: Literal["auto", "local_only", "cloud_only"] | None = None
     default_teaching_level: int | None = Field(default=None, ge=1, le=5)
     cloud_consent: bool | None = None
+    nvidia_consent: bool | None = None
     voice_rate: float | None = Field(default=None, ge=0.5, le=2.0)
     voice_name: str | None = None
     daily_review_goal: int | None = Field(default=None, ge=1, le=500)

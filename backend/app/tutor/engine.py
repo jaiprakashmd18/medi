@@ -184,7 +184,8 @@ def finalize(user_id: str, prep: Prepared, text: str, provider: str, model: str,
                       action=prep.action, teaching_level=prep.level, provider=provider, model=model,
                       grounding=grounding, status=status,
                       meta={"usage": usage, "invalid_citations": invalid, "routing": prep.selection.reason,
-                            "retrieval_note": prep.retrieval.note, "error": error})
+                            "retrieval_note": prep.retrieval.note, "error": error,
+                            "ranker": prep.retrieval.ranker, "rerank_note": prep.retrieval.rerank_note})
         db.add(msg)
         db.flush()
         for i, c in enumerate(prep.retrieval.chunks, start=1):
@@ -207,7 +208,8 @@ def stream_events(user_id: str, prep: Prepared) -> Iterator[dict[str, Any]]:
         "provider": sel.provider.name, "provider_kind": sel.provider.kind, "model": sel.model,
         "routing": sel.reason, "teaching_level": prep.level,
         "sources": [source_payload(i, c) for i, c in enumerate(prep.retrieval.chunks, start=1)],
-        "retrieval_sufficient": prep.retrieval.sufficient, "retrieval_note": prep.retrieval.note}}
+        "retrieval_sufficient": prep.retrieval.sufficient, "retrieval_note": prep.retrieval.note,
+        "ranker": prep.retrieval.ranker, "rerank_note": prep.retrieval.rerank_note}}
     parts: list[str] = []
     try:
         result = sel.provider.stream(system=prep.system, messages=prep.messages, model=sel.model)
@@ -291,6 +293,6 @@ def explain_diagram(db: Session, user: User, image_id: int, level: int | None, q
     return {"image_id": img.id, "explanation": comp.text, "provider": comp.provider, "model": comp.model,
             "vision_used": vision, "routing": sel.reason,
             "sources": [source_payload(i, c) for i, c in enumerate(retrieval.chunks, start=1)],
-            "used_citations": used, "origin": "original",
+            "used_citations": used, "origin": "original", "ranker": retrieval.ranker,
             "notice": None if vision else "No vision-capable model was available: this explanation is based only on "
                                           "OCR text and page content, not on visual analysis of the image."}

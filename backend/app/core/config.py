@@ -59,6 +59,16 @@ class Settings(BaseSettings):
     ollama_vision_model: str = "llava:7b"
     ollama_timeout_seconds: float = 300.0
 
+    # NVIDIA Nemotron reranking (optional second-stage reranker, cloud; consent-gated)
+    nvidia_api_key: str | None = None
+    nvidia_rerank_enabled: bool = True
+    nvidia_rerank_model: str = "nvidia/nemotron-3.5-rerank-8b"
+    nvidia_rerank_url: str = "https://ai.api.nvidia.com/v1/retrieval/nvidia/nemotron-3_5-rerank-8b/reranking"
+    nvidia_rerank_timeout_seconds: float = 8.0
+    nvidia_rerank_max_candidates: int = 24
+    nvidia_rerank_max_passage_chars: int = 2000
+    nvidia_rerank_max_query_chars: int = 1000
+
     # Tools
     tesseract_cmd: str | None = None
     tesseract_lang: str = "eng"

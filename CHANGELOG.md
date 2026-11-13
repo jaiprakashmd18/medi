@@ -9,7 +9,7 @@
 - Robust failure handling (timeouts, auth, 404, 429 with Retry-After, 5xx, malformed bodies) with local fallback and
   cool-down; NVIDIA keys redacted from logs.
 - Ranking separated from sufficiency: logits only order passages; evidence warnings still use calibrated local scores.
-- Evaluation set (18 questions) + `scripts/eval_reranker.py`; 34 new tests (84 backend tests total).
+- Evaluation set (18 questions) + `scripts/eval_reranker.py`; 41 new tests (91 backend tests total).
 
 ## 0.1.0 — 2026-11-08 — initial MVP
 

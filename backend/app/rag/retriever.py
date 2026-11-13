@@ -184,10 +184,17 @@ def _maybe_rerank(db: Session, user_id: str, query: str, pool: list[RetrievedChu
                               "not_configured": "", "disabled": ""}.get(reason, "")
         return local
 
-    # Candidates: the best local candidates, plus any page-in-view chunks.
-    cands = pool[: max(top_k, s.nvidia_rerank_max_candidates)]
-    cand_ids = {c.chunk_id for c in cands}
-    cands += [c for c in pool if c.chunk_id in focus_ids and c.chunk_id not in cand_ids]
+    # Candidates sent to NVIDIA: at most NVIDIA_RERANK_MAX_CANDIDATES in total (the cap on
+    # outgoing document text), page-in-view chunks first, then the best local candidates.
+    # Anything beyond the cap is not sent and is only used locally (appended after the
+    # reranked passages).
+    cap = max(1, s.nvidia_rerank_max_candidates)
+    focus = [c for c in pool if c.chunk_id in focus_ids][:cap]
+    focus_set = {c.chunk_id for c in focus}
+    cands = focus + [c for c in pool if c.chunk_id not in focus_set][: cap - len(focus)]
+    cands.sort(key=lambda c: c.score, reverse=True)  # keep local order for unranked fallback
+    sent_ids = {c.chunk_id for c in cands}
+    local_rest = [c for c in pool if c.chunk_id not in sent_ids]
     try:
         scores = nvidia_reranker.rerank(query, [c.text for c in cands])
     except nvidia_reranker.RerankUnavailable as exc:
@@ -202,6 +209,7 @@ def _maybe_rerank(db: Session, user_id: str, query: str, pool: list[RetrievedChu
         ordered.append(c)
     ranked_ids = {c.chunk_id for c in ordered}
     ordered += [c for c in cands if c.chunk_id not in ranked_ids]  # unranked: keep local order
+    ordered += local_rest  # beyond the outgoing cap: local order, never sent to NVIDIA
 
     final = ordered[:top_k]
     # Page-focus guarantee: the page the student is viewing stays in context.

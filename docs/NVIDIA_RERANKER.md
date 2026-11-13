@@ -25,10 +25,13 @@ question
 * **Citations are unchanged.** Document ID, title, page/slide number, section and text always come from the
   database. Reranking only changes the order (and therefore the `[n]` numbers). Citation validation (only real source
   numbers become citations) is untouched.
-* **Fallback.** Missing key, disabled setting, timeout, network error, 401/403, 404, 429, 5xx or a malformed
+* **Fallback.** Missing key, disabled setting, timeout, network error, 401/403, 402, 404, 429, 5xx or a malformed
   response → the local order is used and the API returns `ranker: "local"` with a `rerank_note`. After an error the
-  reranker pauses briefly (timeouts/5xx 30 s, rate limits per `Retry-After` (5–600 s), bad key or unknown model 10 min) so a
-  broken endpoint doesn't slow every question.
+  reranker pauses briefly (timeouts/5xx 30 s, malformed replies 60 s, rate limits per `Retry-After` (5–600 s), bad
+  key, no credits or unknown model 10 min) so a broken endpoint doesn't slow every question.
+* **Outgoing cap.** At most `NVIDIA_RERANK_MAX_CANDIDATES` (default 24) passages are ever sent per question, page-in-
+  view passages first. Any further candidates (e.g. a search asking for 30 results) stay local and follow the
+  reranked ones.
 
 ## Privacy
 
@@ -67,10 +70,12 @@ Authorization: Bearer $NVIDIA_API_KEY
 → {"rankings": [{"index": 3, "logit": 2.71}, ...]}
 ```
 
-This is the request format NVIDIA documents for its hosted NeMo Retriever reranking models. The NVIDIA API reference
-for this specific model could not be opened from the development environment, so the endpoint is configurable. If
-NVIDIA changes the URL, set `NVIDIA_RERANK_URL`; any other response shape is treated as malformed and falls back to
-local ranking.
+This matches NVIDIA's API reference for this model
+(<https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3_5-rerank-8b-infer>). Note the model path uses **dots**
+(`nemotron-3.5-rerank-8b`); the underscore form returns 404. Limits per the reference: up to 512 passages per
+request and a 10,240-token window per query + passage pair (`truncate: END` trims long passages). Errors handled:
+401/403 (bad key), 402 (no credits), 404, 422, 429, 5xx. If NVIDIA moves the endpoint, set `NVIDIA_RERANK_URL`; any
+other response shape is treated as malformed and falls back to local ranking.
 
 ## Evaluation
 
@@ -85,4 +90,7 @@ python scripts/eval_reranker.py --nvidia   # also NVIDIA (sends only these synth
 
 Local baseline (MiniLM embeddings, measured 2026-11-13): **hit@1 0.94, recall@3 1.00, MRR 0.96**. The one miss was
 "Where do the vessels that supply the heart muscle itself originate?" (correct passage ranked 3rd). NVIDIA results:
-run with `--nvidia` once a key is configured (not measured yet; no key was available during development).
+run with `--nvidia` once a key is configured. A real-key run on Windows (2026-11-13) reached NVIDIA but the
+first endpoint guess (`nemotron-3_5-...`) returned 404; the endpoint was corrected to NVIDIA's documented
+`nemotron-3.5-...` path, which the API recognises (401 without a key). The ranking quality itself has not been
+measured yet.

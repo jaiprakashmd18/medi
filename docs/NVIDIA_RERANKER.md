@@ -88,9 +88,21 @@ python scripts/eval_reranker.py            # local only, offline
 python scripts/eval_reranker.py --nvidia   # also NVIDIA (sends only these synthetic passages)
 ```
 
-Local baseline (MiniLM embeddings, measured 2026-11-13): **hit@1 0.94, recall@3 1.00, MRR 0.96**. The one miss was
-"Where do the vessels that supply the heart muscle itself originate?" (correct passage ranked 3rd). NVIDIA results:
-run with `--nvidia` once a key is configured. A real-key run on Windows (2026-11-13) reached NVIDIA but the
-first endpoint guess (`nemotron-3_5-...`) returned 404; the endpoint was corrected to NVIDIA's documented
-`nemotron-3.5-...` path, which the API recognises (401 without a key). The ranking quality itself has not been
-measured yet.
+Results with the real NVIDIA API (Windows, 2026-11-13, 18 questions):
+
+| Ranker | hit@1 | recall@3 | MRR |
+|---|---|---|---|
+| Local hybrid (MiniLM) | 0.94 | 1.00 | 0.96 |
+| NVIDIA nemotron-3.5-rerank-8b | **1.00** | **1.00** | **1.00** |
+
+NVIDIA ranked the correct passage first for every question, including the one local ranking missed ("Where do the
+vessels that supply the heart muscle itself originate?", ranked 3rd locally). The set is small and fairly easy, so
+treat this as directional rather than a precise benchmark.
+
+**Latency.** The whole run took 41 s (including loading the local embedding model), roughly 2 s per reranking call
+on NVIDIA's free hosted endpoint. With the original 8 s timeout the first (cold-start) call timed out, so the default
+is now `NVIDIA_RERANK_TIMEOUT_SECONDS=15`. Expect tutor answers to start ~2 s later when reranking is on; on a timeout
+the app answers with local ranking.
+
+**In the app.** Tutor answers show a **"Ranked by NVIDIA"** badge when reranking was used, or
+**"NVIDIA unavailable · local ranking"** (with the reason on hover) when it was enabled but failed.

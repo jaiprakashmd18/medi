@@ -134,7 +134,8 @@ export interface ChatMessage {
   model: string | null;
   grounding: "documents" | "general" | "insufficient" | null;
   status: "complete" | "error" | "partial" | "streaming";
-  meta: { invalid_citations?: number[]; routing?: string; retrieval_note?: string; error?: string | null };
+  meta: { invalid_citations?: number[]; routing?: string; retrieval_note?: string; error?: string | null;
+    ranker?: "local" | "nvidia"; rerank_note?: string };
   created_at: string;
   citations: Source[];
 }

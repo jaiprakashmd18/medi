@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     nvidia_rerank_enabled: bool = True
     nvidia_rerank_model: str = "nvidia/nemotron-3.5-rerank-8b"
     nvidia_rerank_url: str = "https://ai.api.nvidia.com/v1/retrieval/nvidia/nemotron-3.5-rerank-8b/reranking"
-    nvidia_rerank_timeout_seconds: float = 8.0
+    nvidia_rerank_timeout_seconds: float = 15.0
     nvidia_rerank_max_candidates: int = 24
     nvidia_rerank_max_passage_chars: int = 2000
     nvidia_rerank_max_query_chars: int = 1000

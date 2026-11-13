@@ -8,7 +8,7 @@ not yet been executed on Windows.
 
 | Suite | Result |
 |---|---|
-| Backend pytest | **84 passed** (50 core + 34 NVIDIA reranking) |
+| Backend pytest | **91 passed** (50 core + 41 NVIDIA reranking) |
 | Frontend vitest | **10 passed** |
 | TypeScript strict typecheck | pass |
 | Next.js production build | pass |

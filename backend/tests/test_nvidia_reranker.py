@@ -52,6 +52,8 @@ class FakeNvidia(BaseHTTPRequestHandler):
             return self._send(429, {"detail": "rate limited"}, {"Retry-After": "30"})
         if m == "401":
             return self._send(401, {"detail": "unauthorized"})
+        if m == "402":
+            return self._send(402, {"detail": "Payment Required", "type": "payment_required"})
         if m == "500":
             return self._send(500, {"detail": "boom"})
         if m == "notjson":
@@ -262,6 +264,7 @@ def test_empty_results_make_no_request(client, nvidia, nv_consent):
 
 # ------------------------------------------------------------------ failures -> fallback
 @pytest.mark.parametrize("mode,code", [("timeout", "timed out"), ("429", "rate limit"), ("401", "rejected"),
+                                       ("402", "no remaining credits"),
                                        ("500", "service error"), ("malformed", "invalid passage index"),
                                        ("notjson", "non-JSON")])
 def test_failures_fall_back_to_local_order(client, heart_doc, nvidia, nv_consent, mode, code):
@@ -377,3 +380,44 @@ def test_evaluation_with_mocked_nvidia(nvidia):
     m = evaluate("nvidia(mock)", nvidia_ranker(), data)
     assert len(nvidia.requests) == len(data["questions"])
     assert 0.0 <= m.mrr <= 1.0
+
+
+# ------------------------------------------------------------------ review fixes
+def test_default_url_matches_nvidia_reference():
+    from app.core.config import Settings
+
+    assert Settings(_env_file=None).nvidia_rerank_url == \
+        "https://ai.api.nvidia.com/v1/retrieval/nvidia/nemotron-3.5-rerank-8b/reranking"
+
+
+def test_outgoing_cap_enforced_for_large_searches(client, heart_doc, nvidia, nv_consent, monkeypatch):
+    monkeypatch.setattr(get_settings(), "nvidia_rerank_max_candidates", 2)
+    res = _search(client, "cardiac conduction heart ventricle atrium", heart_doc["id"], limit=30)
+    assert res["ranker"] == "nvidia"
+    assert len(nvidia.requests[-1]["body"]["passages"]) <= 2
+    assert len(res["results"]) > 2  # extra results kept locally, not sent
+
+
+def test_outgoing_cap_includes_page_focus(client, heart_doc, nvidia, nv_consent, fake_cloud, consent, monkeypatch):
+    monkeypatch.setattr(get_settings(), "nvidia_rerank_max_candidates", 1)
+    client.post("/api/tutor/explain", json={"document_id": heart_doc["id"], "page_number": 3, "action": "simple"})
+    sent = nvidia.requests[-1]["body"]["passages"] if nvidia.requests else []
+    assert len(sent) <= 1
+    assert 'location="page 3"' in fake_cloud.calls[-1]["messages"][-1].content
+
+
+@pytest.mark.parametrize("mode", ["malformed", "notjson"])
+def test_malformed_response_sets_cooldown(client, heart_doc, nvidia, nv_consent, mode):
+    nvidia.mode = mode
+    _search(client, "mitral valve", heart_doc["id"])
+    n = len(nvidia.requests)
+    assert nvidia_reranker.cooldown_remaining() > 30
+    res = _search(client, "mitral valve", heart_doc["id"])
+    assert len(nvidia.requests) == n and "paused" in res["rerank_note"]
+
+
+def test_client_rejects_too_many_passages(nvidia, monkeypatch):
+    monkeypatch.setattr(get_settings(), "nvidia_rerank_max_candidates", 3)
+    with pytest.raises(RerankUnavailable) as e:
+        nvidia_reranker.rerank("q", ["a", "b", "c", "d"])
+    assert e.value.code == "too_many_passages" and nvidia.requests == []

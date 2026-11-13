@@ -25,7 +25,8 @@ comparable within a single query. They are used for ORDERING only and are
 never mixed with, or substituted for, the calibrated local scores that decide
 whether the documents contain sufficient evidence.
 
-API format (NVIDIA hosted retrieval / NIM reranking):
+API format (NVIDIA API reference, docs.api.nvidia.com/nim/reference/nvidia-nemotron-3_5-rerank-8b-infer;
+the model path uses dots, "nemotron-3.5-rerank-8b"; up to 512 passages; 10240-token window per pair):
     POST {NVIDIA_RERANK_URL}
     {"model": "...", "query": {"text": "..."}, "passages": [{"text": "..."}, ...], "truncate": "END"}
     -> {"rankings": [{"index": <int>, "logit": <float>}, ...]}
@@ -146,6 +147,9 @@ def rerank(query: str, passages: list[str], *, client: httpx.Client | None = Non
     s = get_settings()
     if not passages:
         return []
+    if len(passages) > max(1, s.nvidia_rerank_max_candidates):
+        raise RerankUnavailable("Too many passages for the configured NVIDIA_RERANK_MAX_CANDIDATES cap.",
+                                "too_many_passages")
     if not (s.nvidia_api_key and s.nvidia_api_key.strip()):
         raise RerankUnavailable("NVIDIA API key is not configured.", "not_configured")
     remaining = cooldown_remaining()
@@ -180,6 +184,9 @@ def rerank(query: str, passages: list[str], *, client: httpx.Client | None = Non
         _set_cooldown(600, "invalid_credentials")
         log.warning("NVIDIA rerank rejected the API key (HTTP %s); using local ranking.", code)
         raise RerankUnavailable("The NVIDIA API key was rejected.", "invalid_credentials")
+    if code == 402:
+        _set_cooldown(600, "payment_required")
+        raise RerankUnavailable("NVIDIA reports no remaining credits for this API key (HTTP 402).", "payment_required")
     if code == 429:
         retry = resp.headers.get("retry-after", "")
         wait = float(retry) if retry.replace(".", "", 1).isdigit() else 60.0
@@ -197,5 +204,10 @@ def rerank(query: str, passages: list[str], *, client: httpx.Client | None = Non
     try:
         body = resp.json()
     except ValueError as exc:
+        _set_cooldown(60, "malformed")
         raise RerankUnavailable("NVIDIA returned a non-JSON response.", "malformed") from exc
-    return _parse(body, len(passages))
+    try:
+        return _parse(body, len(passages))
+    except RerankUnavailable:
+        _set_cooldown(60, "malformed")
+        raise

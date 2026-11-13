@@ -61,6 +61,12 @@ def providers(refresh: bool = False, db: Session = Depends(get_db), user: User =
             routes[task] = {"provider": sel.provider.name, "model": sel.model, "reason": sel.reason, "ok": True}
         except Exception as exc:
             routes[task] = {"ok": False, "reason": getattr(exc, "message", str(exc)), "code": getattr(exc, "code", "")}
+    from app.rag import nvidia_reranker
+
+    allowed, reason = nvidia_reranker.rerank_allowed(st.ai_mode, st.nvidia_consent)
+    reranker = {**nvidia_reranker.status(), "active_for_you": allowed, "reason": reason,
+                "nvidia_consent": st.nvidia_consent}
     return {"mode": st.ai_mode, "cloud_consent": st.cloud_consent, "providers": out, "routes": routes,
+            "reranker": reranker,
             "billing_note": "Claude API usage is billed separately by Anthropic; a Claude Pro/Max subscription does "
                             "not include API credits."}

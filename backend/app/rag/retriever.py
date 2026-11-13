@@ -5,6 +5,7 @@ from the database (never generated), so citations cannot be invented.
 """
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import Counter
@@ -14,9 +15,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.models import Chunk, Document
+from app.models import Chunk, Document, UserSettings
 
+from . import nvidia_reranker
 from .vectorstore import get_vector_store
+
+log = logging.getLogger(__name__)
 
 STOP = set("""a an the of and or to in on for with by is are was were be been as at from that this these those it its
 which what how why when where who whom into than then also can may might do does did not no yes about explain describe
@@ -42,6 +46,9 @@ class RetrievedChunk:
     lexical: float
     suspicious: bool = False
     image_id: int | None = None
+    # Raw NVIDIA logit when reranked. Ordering signal only: never used for sufficiency
+    # and not comparable with `score` (the calibrated local hybrid score).
+    rerank_score: float | None = None
 
 
 @dataclass
@@ -50,6 +57,8 @@ class RetrievalResult:
     chunks: list[RetrievedChunk] = field(default_factory=list)
     sufficient: bool = False
     note: str = ""
+    ranker: str = "local"  # "local" (hybrid) or "nvidia"
+    rerank_note: str = ""  # why NVIDIA was not used / fell back (no secrets)
 
     @property
     def best_score(self) -> float:
@@ -74,7 +83,13 @@ def _lexical(query_tokens: list[str], text: str) -> float:
 
 def retrieve(db: Session, user_id: str, query: str, *, document_ids: list[str] | None = None,
              subject_id: int | None = None, top_k: int | None = None,
-             focus_pages: list[tuple[str, int]] | None = None) -> RetrievalResult:
+             focus_pages: list[tuple[str, int]] | None = None,
+             rerank: bool | None = None) -> RetrievalResult:
+    """Retrieve the user's most relevant passages.
+
+    ``rerank``: None = use NVIDIA reranking only if this user's settings allow it (default);
+    False = local hybrid ranking only. There is deliberately no way to bypass consent.
+    """
     s = get_settings()
     top_k = top_k or s.retrieval_top_k
     result = RetrievalResult(query=query)
@@ -128,22 +143,75 @@ def retrieve(db: Session, user_id: str, query: str, *, document_ids: list[str] |
             kind=chunk.kind, text=chunk.text, score=round(score, 4), semantic=round(sem, 4),
             lexical=round(lex, 4), suspicious=chunk.suspicious, image_id=chunk.image_id))
     scored.sort(key=lambda c: c.score, reverse=True)
-    # de-duplicate near-identical texts
+    # De-duplicate near-identical texts and keep the eligible pool. Eligibility (the local
+    # relevance threshold) is decided BEFORE any reranking, so a reranker can reorder
+    # authorized, locally-relevant candidates but never promote filtered-out passages.
     seen: set[str] = set()
-    final: list[RetrievedChunk] = []
+    pool: list[RetrievedChunk] = []
     for c in scored:
         key = re.sub(r"\W+", "", c.text.lower())[:200]
         if key in seen:
             continue
         seen.add(key)
         if c.score >= s.retrieval_min_score * 0.6 or c.chunk_id in focus_ids:
-            final.append(c)
-        if len(final) >= top_k:
-            break
+            pool.append(c)
+
+    final = pool[:top_k]
+    if rerank is not False and len(pool) > 1:
+        final = _maybe_rerank(db, user_id, query, pool, top_k, focus_ids, result)
     result.chunks = final
+    # Sufficiency uses the calibrated LOCAL scores of the passages actually selected,
+    # independent of which ranker ordered them.
     result.sufficient = bool(final) and result.best_score >= s.retrieval_min_score
     if not final:
         result.note = "No sufficiently relevant passages were found in your documents."
     elif not result.sufficient:
         result.note = "Only weakly related passages were found; the documents may not cover this topic."
     return result
+
+
+def _maybe_rerank(db: Session, user_id: str, query: str, pool: list[RetrievedChunk], top_k: int,
+                  focus_ids: set[str], result: RetrievalResult) -> list[RetrievedChunk]:
+    """Reorder the authorized candidate pool with NVIDIA; fall back to local order on any problem."""
+    s = get_settings()
+    local = pool[:top_k]
+    st = db.get(UserSettings, user_id)
+    allowed, reason = nvidia_reranker.rerank_allowed(st.ai_mode if st else None,
+                                                     st.nvidia_consent if st else False)
+    if not allowed:
+        result.rerank_note = {"no_consent": "NVIDIA reranking not used: no consent given.",
+                              "local_only": "NVIDIA reranking not used: local-only mode.",
+                              "not_configured": "", "disabled": ""}.get(reason, "")
+        return local
+
+    # Candidates: the best local candidates, plus any page-in-view chunks.
+    cands = pool[: max(top_k, s.nvidia_rerank_max_candidates)]
+    cand_ids = {c.chunk_id for c in cands}
+    cands += [c for c in pool if c.chunk_id in focus_ids and c.chunk_id not in cand_ids]
+    try:
+        scores = nvidia_reranker.rerank(query, [c.text for c in cands])
+    except nvidia_reranker.RerankUnavailable as exc:
+        log.info("NVIDIA rerank fallback (%s)", exc.code)
+        result.rerank_note = f"{exc.reason} Used local ranking."
+        return local
+
+    ordered: list[RetrievedChunk] = []
+    for r in scores:
+        c = cands[r.index]
+        c.rerank_score = round(r.logit, 4)
+        ordered.append(c)
+    ranked_ids = {c.chunk_id for c in ordered}
+    ordered += [c for c in cands if c.chunk_id not in ranked_ids]  # unranked: keep local order
+
+    final = ordered[:top_k]
+    # Page-focus guarantee: the page the student is viewing stays in context.
+    missing = [c for c in ordered[top_k:] if c.chunk_id in focus_ids]
+    for m in missing:
+        for i in range(len(final) - 1, -1, -1):
+            if final[i].chunk_id not in focus_ids:
+                final[i] = m
+                break
+    pos = {c.chunk_id: i for i, c in enumerate(ordered)}
+    final.sort(key=lambda c: pos[c.chunk_id])
+    result.ranker = "nvidia"
+    return final

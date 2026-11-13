@@ -59,8 +59,10 @@ restart are re-queued on startup.
 1. Scope = the user's ready documents, optionally narrowed to documents or a subject (authorization is enforced in SQL
    before vector search).
 2. Vector search (top-k × 4) + chunks of the page currently viewed.
-3. Re-rank: `0.7 · cosine + 0.3 · lexical overlap`; de-duplicate; keep top-k.
-4. `sufficient` = best score ≥ `RETRIEVAL_MIN_SCORE`. Otherwise the model is told the sources are weak and must say so.
+3. Score: `0.7 · cosine + 0.3 · lexical overlap`; de-duplicate; drop passages below the local threshold.
+3b. Optional NVIDIA Nemotron rerank of the eligible pool (consent-gated, never in local-only mode, local fallback);
+   ordering only — see [docs/NVIDIA_RERANKER.md](docs/NVIDIA_RERANKER.md). Keep top-k (page-in-view passages kept).
+4. `sufficient` = best *local* score of the selected passages ≥ `RETRIEVAL_MIN_SCORE` (never the reranker's logits). Otherwise the model is told the sources are weak and must say so.
 5. Sources are numbered `[1]…[n]` inside `<sources>` tags. After generation the engine parses the `[n]` markers; only
    numbers that exist are stored as citations (`used_in_answer = true`). Other numbers are reported as
    `invalid_citations` and rendered as warnings — the model cannot create a citation.

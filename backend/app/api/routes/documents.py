@@ -189,7 +189,8 @@ def search(q: str = Query(min_length=2, max_length=500), document_ids: list[str]
            subject_id: int | None = None, limit: int = Query(10, ge=1, le=30),
            db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     res = retrieve(db, user.id, q, document_ids=document_ids or None, subject_id=subject_id, top_k=limit)
-    return {"query": q, "note": res.note, "sufficient": res.sufficient,
+    return {"query": q, "note": res.note, "sufficient": res.sufficient, "ranker": res.ranker,
+            "rerank_note": res.rerank_note,
             "results": [{"chunk_id": c.chunk_id, "document_id": c.document_id, "document_title": c.document_title,
                          "page_number": c.page_number, "page_kind": c.page_kind, "section": c.section, "kind": c.kind,
                          "text": c.text, "score": c.score} for c in res.chunks]}

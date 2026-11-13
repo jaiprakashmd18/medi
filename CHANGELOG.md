@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — NVIDIA Nemotron reranking
+- Optional second-stage reranking with `nvidia/nemotron-3.5-rerank-8b` (`backend/app/rag/nvidia_reranker.py`),
+  applied to the authorized local candidate pool in `retriever.py`; preserves chunk/document/page/section metadata,
+  page-focus passages and citation validation.
+- Separate, revocable NVIDIA consent (`user_settings.nvidia_consent`, migration `0002`), disabled in local-only mode,
+  Settings toggle, reranker status in `/api/ai/providers`, `ranker`/`rerank_note` in search results and tutor metadata.
+- Robust failure handling (timeouts, auth, 404, 429 with Retry-After, 5xx, malformed bodies) with local fallback and
+  cool-down; NVIDIA keys redacted from logs.
+- Ranking separated from sufficiency: logits only order passages; evidence warnings still use calibrated local scores.
+- Evaluation set (18 questions) + `scripts/eval_reranker.py`; 34 new tests (84 backend tests total).
+
 ## 0.1.0 — 2026-11-08 — initial MVP
 
 ### Phase 1 — Foundation

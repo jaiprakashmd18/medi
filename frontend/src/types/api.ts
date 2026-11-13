@@ -169,6 +169,8 @@ export interface ProvidersResponse {
   providers: ProviderInfo[];
   routes: Record<string, { ok: boolean; provider?: string; model?: string; reason: string; code?: string }>;
   billing_note: string;
+  reranker?: { name: string; model: string; enabled: boolean; configured: boolean; cooldown_seconds: number;
+    cooldown_reason: string | null; active_for_you: boolean; reason: string; nvidia_consent: boolean };
 }
 
 export type AIMode = "auto" | "local_only" | "cloud_only";
@@ -178,6 +180,8 @@ export interface UserSettings {
   default_teaching_level: number;
   cloud_consent: boolean;
   cloud_consent_at: string | null;
+  nvidia_consent: boolean;
+  nvidia_consent_at: string | null;
   voice_rate: number;
   voice_name: string | null;
   daily_review_goal: number;

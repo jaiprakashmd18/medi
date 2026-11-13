@@ -8,6 +8,7 @@ from .config import get_settings
 
 _SECRET_PATTERNS = [
     re.compile(r"sk-ant-[A-Za-z0-9_\-]{8,}"),
+    re.compile(r"nvapi-[A-Za-z0-9_\-]{8,}"),
     re.compile(r"(?i)(api[_-]?key|authorization|x-api-key)(\"?\s*[:=]\s*\"?)([^\s\"',]+)"),
     re.compile(r"(access_token=)[^&\s\"]+"),
 ]
@@ -28,11 +29,13 @@ class RedactingFilter(logging.Filter):
 
 def redact(text: str) -> str:
     text = _SECRET_PATTERNS[0].sub("sk-ant-***REDACTED***", text)
-    text = _SECRET_PATTERNS[1].sub(lambda m: f"{m.group(1)}{m.group(2)}***REDACTED***", text)
-    text = _SECRET_PATTERNS[2].sub(r"\1***REDACTED***", text)
-    key = get_settings().anthropic_api_key
-    if key and len(key) > 8:
-        text = text.replace(key, "***REDACTED***")
+    text = _SECRET_PATTERNS[1].sub("nvapi-***REDACTED***", text)
+    text = _SECRET_PATTERNS[2].sub(lambda m: f"{m.group(1)}{m.group(2)}***REDACTED***", text)
+    text = _SECRET_PATTERNS[3].sub(r"\1***REDACTED***", text)
+    s = get_settings()
+    for key in (s.anthropic_api_key, s.nvidia_api_key):
+        if key and len(key) > 8:
+            text = text.replace(key, "***REDACTED***")
     return text
 
 

@@ -36,6 +36,11 @@ def update_settings(body: SettingsIn, db: Session = Depends(get_db), user: User 
             st.cloud_consent_at = utcnow()
         if not data["cloud_consent"]:
             st.cloud_consent_at = None
+    if "nvidia_consent" in data:
+        if data["nvidia_consent"] and not st.nvidia_consent:
+            st.nvidia_consent_at = utcnow()
+        if not data["nvidia_consent"]:  # revocation takes effect on the next retrieval
+            st.nvidia_consent_at = None
     for k, v in data.items():
         setattr(st, k, v)
     db.commit()

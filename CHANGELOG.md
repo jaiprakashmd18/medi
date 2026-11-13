@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — NVIDIA Nemotron reranking
+## Unreleased
+
+- Tutor answers show "Ranked by NVIDIA" (or "NVIDIA unavailable · local ranking") badges.
+- Default `NVIDIA_RERANK_TIMEOUT_SECONDS` raised from 8 to 15 after real-API testing (cold start exceeded 8 s).
+- Real-API evaluation results added to docs/NVIDIA_RERANKER.md (NVIDIA MRR 1.00 vs local 0.96).
+
+## NVIDIA Nemotron reranking
 - Optional second-stage reranking with `nvidia/nemotron-3.5-rerank-8b` (`backend/app/rag/nvidia_reranker.py`),
   applied to the authorized local candidate pool in `retriever.py`; preserves chunk/document/page/section metadata,
   page-focus passages and citation validation.

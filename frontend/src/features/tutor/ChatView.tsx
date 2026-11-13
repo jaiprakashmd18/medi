@@ -14,6 +14,7 @@ import { api, ApiError, streamChat } from "@/services/api";
 import type { ChatMessage, Source } from "@/types/api";
 
 import { Markdown } from "./Markdown";
+import { RankerBadge } from "./RankerBadge";
 
 export const QUICK_ACTIONS = [
   { id: "simple", label: "Explain simply", icon: Lightbulb },
@@ -115,7 +116,8 @@ export function ChatView({ documentIds = [], subjectId, pageNumber, pageLabel, c
             onConversation?.(m.conversation_id);
           }
           patch((x) => ({ ...x, provider: m.provider, model: m.model, sources: m.sources,
-            meta: { ...x.meta, routing: m.routing, retrieval_note: m.retrieval_note } }));
+            meta: { ...x.meta, routing: m.routing, retrieval_note: m.retrieval_note, ranker: m.ranker,
+              rerank_note: m.rerank_note } }));
         },
         onDelta: (t) => { finalText += t; patch((x) => ({ ...x, content: x.content + t })); },
         onDone: (d) => {
@@ -251,6 +253,7 @@ function AssistantMessage({ m, onCite, tts, onRetry }: { m: UIMessage; onCite?: 
         )}
         {m.teaching_level && <Badge>L{m.teaching_level} · {LEVELS[m.teaching_level - 1]?.name}</Badge>}
         {g && <Badge tone={g.tone} title={g.title}>{g.label}</Badge>}
+        {m.status !== "streaming" && <RankerBadge ranker={m.meta?.ranker} note={m.meta?.rerank_note} />}
         {m.status === "partial" && <Badge tone="warn">Answer truncated — ask “Continue”</Badge>}
         <div className="ml-auto flex items-center gap-0.5">
           {tts.supported && m.content && m.status !== "streaming" && (speaking ? (

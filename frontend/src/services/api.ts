@@ -120,7 +120,8 @@ export function uploadDocuments(
 
 export interface StreamHandlers {
   onMeta?: (m: { conversation_id: string; provider: string; provider_kind: string; model: string; routing: string;
-    sources: Source[]; retrieval_sufficient: boolean; retrieval_note: string; teaching_level: number }) => void;
+    sources: Source[]; retrieval_sufficient: boolean; retrieval_note: string; teaching_level: number;
+    ranker?: "local" | "nvidia"; rerank_note?: string }) => void;
   onDelta?: (text: string) => void;
   onDone?: (d: { message_id: string; grounding: string; used_citations: number[]; invalid_citations: number[];
     provider: string; model: string; truncated: boolean }) => void;
